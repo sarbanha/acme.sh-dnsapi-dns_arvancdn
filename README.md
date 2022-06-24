@@ -16,7 +16,6 @@ Run `acme.sh` to issue your SSL Certificate:
 acme.sh --issue -d yourdomain.tld --dns dns_arvandcdn
 ```
 
-Then use acme
 **Note:** You cain find `dns_arvancdn.sh` inside `[acme.sh installation directory]/dnsapi`.
 
 
