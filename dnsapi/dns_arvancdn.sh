@@ -85,7 +85,7 @@ _get_root(){
   export _H1="Content-Type: application-json"
   export _H2="Authorization: apikey $ARVAN_API_KEY"
 
-  _response=$(_get $ARVAN_CDN_API/domains/$_zone)
+  _response=$(_get $ARVAN_CDN_API/domains)
   _domains_list=( $( echo $_response | grep -Poe '"domain":"[^"]*"' | sed 's/"domain":"//' | sed 's/"//') )
 
   _debug2 "_get_root(): $_response"
