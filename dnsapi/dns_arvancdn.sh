@@ -25,8 +25,8 @@ dns_arvancdn_add() {
   _saveaccountconf_mutable ARVAN_API_KEY "${ARVAN_API_KEY}"
 
   _debug "dns_arvan_add(): Check domain root zone availability for ${_fulldomain}"
-  _zone=$(_get_root "${_fulldomain}")
-  if [ $? -ne 0 ]; then
+
+  if ! _zone=$(_get_root "${_fulldomain}"); then
     _err "dns_arvan_add(): Root zone for ${_fulldomain} not found!"
     return 1
   fi
@@ -46,7 +46,7 @@ dns_arvancdn_add() {
 }
 
 #Usage: dns_arvancdn_rm fulldomain txtvalue
-dns_arvancdn_rm(){
+dns_arvancdn_rm() {
 
   _fulldomain=$1
   _challenge=$2
@@ -59,8 +59,7 @@ dns_arvancdn_rm(){
     return 1
   fi
 
-  _zone=$(_get_root "${_fulldomain}")
-  if [ $? -ne 0 ]; then
+  if ! _zone=$(_get_root "${_fulldomain}"); then
     _err "dns_arvan_rm(): Root zone for ${_fulldomain} not found!"
     return 1
   fi
@@ -69,7 +68,6 @@ dns_arvancdn_rm(){
   _record_name=${_zone/\.\.*/}
   #_zone=$(echo "${_zone}" | sed "s/.*\.\.//")
   _zone=${_zone/*\.\./}
-
 
   _record_id=$(_record_get_id "${_zone}" "${_challenge}")
 
@@ -82,7 +80,7 @@ dns_arvancdn_rm(){
 ####################
 
 #Usage: _get_root zone
-_get_root(){
+_get_root() {
   _fulldomain=$1
   _zone=$_fulldomain
 
@@ -91,7 +89,7 @@ _get_root(){
 
   _response=$(_get "${ARVAN_CDN_API}/domains")
   #_domains_list=( $( echo "${_response}" | grep -Poe '"domain":"[^"]*"' | sed 's/"domain":"//' | sed 's/"//') )
-  read -a _domains_list < <( echo "${_response}" | grep -Poe '"domain":"[^"]*"' | sed 's/"domain":"//' | sed 's/"//')
+  read -r -a _domains_list < <(echo "${_response}" | grep -Poe '"domain":"[^"]*"' | sed 's/"domain":"//' | sed 's/"//')
 
   _debug2 "_get_root(): reponse ${_response}"
   _debug2 "_get_root(): domains list ${_domains_list[*]}"
@@ -103,20 +101,20 @@ _get_root(){
         break 2
       fi
     done
-    _zone=$(echo "${_zone}" | sed 's/^[^.]*\.\?//')
+    _zone=$(sed 's/^[^.]*\.\?//' <(echo "${_zone}"))
   done
   if [ -z "${_zone}" ]; then
     _debug2 "_get_root(): Zone not found on provider"
     exit 1
   fi
 
-  _marked_zone=$(echo "${_fulldomain}" | sed "s/^\(.*\)\.\(${_zone}\)$/\1..\2/")
+  _marked_zone=$(sed "s/^\(.*\)\.\(${_zone}\)$/\1..\2/" <(echo "${_fulldomain}"))
   echo "${_marked_zone}"
 
 }
 
 #Usage: _record_add record_name zone challenge
-_record_add(){
+_record_add() {
 
   _record_name=$1
   _zone=$2
@@ -133,7 +131,7 @@ _record_add(){
 }
 
 #Usage: _record_get_id zone challenge
-_record_get_id(){
+_record_get_id() {
 
   _zone=$1
   _challenge=$2
@@ -144,13 +142,12 @@ _record_get_id(){
   _response=$(_get "${ARVAN_CDN_API}/domains/${_zone}/dns-records/?type=txt\&search=${_challenge}" | _json_decode | _normalizeJson | grep -Eo '"id":.*?,"value":\{"text":".*?"\}' | sed 's/"id":"\([^"]*\)".*/\1/')
   _debug2 "_record_get_id(): ${_response}"
 
-
   echo "${_response}"
 
 }
 
 #Usage: _record_remove zone record_id
-_record_remove(){
+_record_remove() {
 
   _zone=$1
   _record_id=$2
@@ -160,7 +157,7 @@ _record_remove(){
 
   _response=$(_post "" "$ARVAN_CDN_API/domains/$_zone/dns-records/$_record_id" "" "DELETE" "application/json")
 
-  _debug  "_record_remove(): ACME Challenge Removed"
+  _debug "_record_remove(): ACME Challenge Removed"
   _debug2 "        Response: $_response"
 
 }
